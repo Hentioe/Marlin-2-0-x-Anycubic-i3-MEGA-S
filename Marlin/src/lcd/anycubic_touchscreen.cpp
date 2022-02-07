@@ -237,6 +237,7 @@ void AnycubicTouchscreenClass::Setup() {
 
   #if ENABLED(ANYCUBIC_FILAMENT_RUNOUT_SENSOR)
     if ((READ(FILAMENT_RUNOUT_PIN) == true) && FilamentSensorEnabled) {
+
       #ifndef ANYCUBIC_TFT_DEBUG
         HARDWARE_SERIAL_PROTOCOLPGM("J15"); //J15 FILAMENT LACK
         HARDWARE_SERIAL_ENTER();
@@ -496,7 +497,7 @@ void AnycubicTouchscreenClass::PausePrint() {
 
 inline void AnycubicTouchscreenClass::StopPrint()
 {
-  card.abortFilePrintNow();
+  card.abortFilePrintSoon();
 
   #ifdef ANYCUBIC_TFT_DEBUG
     SERIAL_ECHOLNPGM("DEBUG: Stopped and cleared");
@@ -512,6 +513,7 @@ inline void AnycubicTouchscreenClass::StopPrint()
     SERIAL_EOL();
   #endif
 
+  IsParked = true;
   TFTstate = ANYCUBIC_TFT_STATE_SDSTOP_REQ;
 }
 
@@ -1175,17 +1177,22 @@ void AnycubicTouchscreenClass::PrintList() {
       else {
         card.selectFileByIndex(count - 1);
 
-        // Bugfix for non-printable special characters
-        // which are now replaced by underscores.
         int fileNameLen = strlen(card.longFilename);
+        bool fileNameWasCut = false;
 
         // Cut off too long filenames.
-        // They don't fit on the screen anyways.
-        //if (fileNameLen > MAX_PRINTABLE_FILENAME_LEN)
-        //  fileNameLen = MAX_PRINTABLE_FILENAME_LEN;
+        // They don't fit on the screen anyway.
+        #if ENABLED(KNUTWURST_DGUS2_TFT)
+          if (fileNameLen >= MAX_PRINTABLE_FILENAME_LEN) {
+            fileNameWasCut = true;
+            fileNameLen = MAX_PRINTABLE_FILENAME_LEN;
+          } 
+        #endif
 
         char outputString[fileNameLen];
 
+        // Bugfix for non-printable special characters
+        // which are now replaced by underscores.
         for (unsigned char i = 0; i <= fileNameLen; i++) {
           if (i >= fileNameLen) {
             outputString[i] = ' ';
@@ -1198,6 +1205,17 @@ void AnycubicTouchscreenClass::PrintList() {
           }
         }
 
+        // I know, it's ugly, but it's faster than a string lib
+        if(fileNameWasCut) {
+            outputString[fileNameLen-7] = '~';
+            outputString[fileNameLen-6] = '.';
+            outputString[fileNameLen-5] = 'g';
+            outputString[fileNameLen-4] = 'c';
+            outputString[fileNameLen-3] = 'o';
+            outputString[fileNameLen-2] = 'd';
+            outputString[fileNameLen-1] = 'e';
+        }
+
         outputString[fileNameLen] = '\0';
 
         if (card.flag.filenameIsDir) {
@@ -1208,20 +1226,16 @@ void AnycubicTouchscreenClass::PrintList() {
             HARDWARE_SERIAL_PROTOCOLPGM("/");
             HARDWARE_SERIAL_PROTOCOL(outputString);
             HARDWARE_SERIAL_PROTOCOLLNPGM(".gcode");
-            SERIAL_ECHO(count);
-            SERIAL_ECHOPGM(": /");
-            SERIAL_ECHOLN(outputString);
           #else
             HARDWARE_SERIAL_PROTOCOL("/");
             HARDWARE_SERIAL_PROTOCOLLN(card.filename);
             HARDWARE_SERIAL_PROTOCOL("/");
             HARDWARE_SERIAL_PROTOCOLLN(outputString);
-            SERIAL_ECHO(count);
-            SERIAL_ECHOPGM(": /");
-            SERIAL_ECHOLN(outputString);
           #endif
-        }
-        else {
+          SERIAL_ECHO(count);
+          SERIAL_ECHOPGM(": /");
+          SERIAL_ECHOLN(outputString);
+        } else {
           HARDWARE_SERIAL_PROTOCOLLN(card.filename);
           HARDWARE_SERIAL_PROTOCOLLN(outputString);
           SERIAL_ECHO(count);
@@ -1366,7 +1380,6 @@ void AnycubicTouchscreenClass::StateHandler() {
         HARDWARE_SERIAL_PROTOCOLPGM("J16"); // J16 stop print
         HARDWARE_SERIAL_ENTER();
         if ((!card.isPrinting()) && (!planner.movesplanned())) {
-          queue.clear();
           TFTstate = ANYCUBIC_TFT_STATE_IDLE;
           #ifdef SDSUPPORT
              HARDWARE_SERIAL_PROTOCOLPGM("J16"); // J16 stop print
@@ -1393,6 +1406,15 @@ void AnycubicTouchscreenClass::StateHandler() {
       break;
   }
 }
+
+
+/*
+ * TODO: Refactoring of the filamentsensor-Stuff.
+ * 
+ * Every cycle a timer should be reset if the sensor reads "filament is present"
+ * If the timer is not reset within a period of time, the filament runout state
+ * should be triggered.
+ */
 
 void AnycubicTouchscreenClass::FilamentRunout() {
   if (FilamentSensorEnabled == true) {
