@@ -499,13 +499,13 @@ inline void AnycubicTouchscreenClass::StopPrint()
 {
   card.abortFilePrintSoon();
 
-  #ifdef ANYCUBIC_TFT_DEBUG
-    SERIAL_ECHOLNPGM("DEBUG: Stopped and cleared");
-  #endif
-
   print_job_timer.stop();
   thermalManager.disable_all_heaters();
   thermalManager.zero_fan_speeds();
+  
+  #ifdef ANYCUBIC_TFT_DEBUG
+    SERIAL_ECHOLNPGM("DEBUG: Stopped and cleared");
+  #endif
 
   ai3m_pause_state = 0;
   #ifdef ANYCUBIC_TFT_DEBUG
@@ -513,7 +513,6 @@ inline void AnycubicTouchscreenClass::StopPrint()
     SERIAL_EOL();
   #endif
 
-  IsParked = true;
   TFTstate = ANYCUBIC_TFT_STATE_SDSTOP_REQ;
 }
 
@@ -588,21 +587,10 @@ void AnycubicTouchscreenClass::ReheatNozzle() {
 }
 
 void AnycubicTouchscreenClass::ParkAfterStop(){
-  // only park the nozzle if homing was done before
-  if (!homing_needed_error()) {
-    // raize nozzle by 25mm respecting Z_MAX_POS
-    do_blocking_move_to_z(_MIN(current_position[Z_AXIS] + 25, Z_MAX_POS), 5);
-    #ifdef ANYCUBIC_TFT_DEBUG
-      SERIAL_ECHOLNPGM("DEBUG: SDSTOP: Park Z");
-    #endif
-    // move bed and hotend to park position
-    do_blocking_move_to_xy((X_MIN_POS + 10), (Y_MAX_POS - 10), 100);
-    #ifdef ANYCUBIC_TFT_DEBUG
-      SERIAL_ECHOLNPGM("DEBUG: SDSTOP: Park XY");
-    #endif
-  }
+
   queue.enqueue_now_P(PSTR("M84")); // disable stepper motors
   queue.enqueue_now_P(PSTR("M27")); // force report of SD status
+
   ai3m_pause_state = 0;
   #ifdef ANYCUBIC_TFT_DEBUG
     SERIAL_ECHOPGM("DEBUG: AI3M Pause State: ", ai3m_pause_state);
@@ -2286,6 +2274,9 @@ void AnycubicTouchscreenClass::GetCommandFromTFT() {
                     WRITE(HEATER_0_PIN, 0);
                   }
                   break;
+            #endif
+            
+            #if ENABLED(KNUTWURST_MEGA_P)
                 case 51:
                   if (CodeSeen('H')) {
                     queue.enqueue_now_P(PSTR("G1 Z5 F500"));
@@ -2310,11 +2301,11 @@ void AnycubicTouchscreenClass::GetCommandFromTFT() {
                   else if (CodeSeen('L')) {
                     queue.enqueue_now_P(PSTR("G1 X100 Y100  Z50 F5000"));
                   }
-                }
-                break;
+                  break;
             #endif
-            default:
-              break;
+            
+          default:
+          break;
           }
         }
         TFTbufindw = (TFTbufindw + 1)%TFTBUFSIZE;
