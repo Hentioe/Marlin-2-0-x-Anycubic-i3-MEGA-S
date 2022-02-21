@@ -260,7 +260,7 @@ void AnycubicTouchscreenClass::Setup() {
     buzzer.tone(100, 554);
     buzzer.tone(100, 740);
     buzzer.tone(100, 831);
-  #endif  
+  #endif
 }
 
 #if ENABLED(KNUTWURST_MEGA_P_LASER)
@@ -502,7 +502,7 @@ inline void AnycubicTouchscreenClass::StopPrint()
   print_job_timer.stop();
   thermalManager.disable_all_heaters();
   thermalManager.zero_fan_speeds();
-  
+
   #ifdef ANYCUBIC_TFT_DEBUG
     SERIAL_ECHOLNPGM("DEBUG: Stopped and cleared");
   #endif
@@ -520,7 +520,7 @@ void AnycubicTouchscreenClass::FilamentChangeResume() {
   #ifdef ANYCUBIC_TFT_DEBUG
     SERIAL_ECHOLNPGM("DEBUG: M108 Resume called");
   #endif
-  
+
   //IsParked = false; // remove parked flag
   starttime = millis();
   card.startOrResumeFilePrinting(); // resume regularly
@@ -626,7 +626,7 @@ void AnycubicTouchscreenClass::HandleSpecialMenu() {
     SERIAL_ECHOLNPGM("Special Menu: PID Tune Hotend");
 
     #if ANY(KNUTWURST_MEGA, KNUTWURST_MEGA_S, KNUTWURST_MEGA_P)
-      queue.inject_P(PSTR("G28\nG90\nG1 Z20\nG1 X110 Y110 F4000\nG1 Z5\nM106 S172\nG4 P500\nM303 E0 S215 C15 U1\nG4 P500\nM107\nG28\nG1 Z10\nM84\nM500\nM300 S440 P200\nM300 S660 P250\nM300 S880 P300"));
+      queue.inject_P(PSTR("G28\nG90\nG1 Z20\nG1 X110 Y110 F4000\nG1 Z5\nM106 S255\nG4 P500\nM303 E0 S215 C15 U1\nG4 P500\nM107\nG28\nG1 Z10\nM84\nM500\nM300 S440 P200\nM300 S660 P250\nM300 S880 P300"));
     #endif
 
     #if ENABLED(KNUTWURST_MEGA_X)
@@ -1174,7 +1174,7 @@ void AnycubicTouchscreenClass::PrintList() {
           if (fileNameLen >= MAX_PRINTABLE_FILENAME_LEN) {
             fileNameWasCut = true;
             fileNameLen = MAX_PRINTABLE_FILENAME_LEN;
-          } 
+          }
         #endif
 
         char outputString[fileNameLen];
@@ -1398,7 +1398,7 @@ void AnycubicTouchscreenClass::StateHandler() {
 
 /*
  * TODO: Refactoring of the filamentsensor-Stuff.
- * 
+ *
  * Every cycle a timer should be reset if the sensor reads "filament is present"
  * If the timer is not reset within a period of time, the filament runout state
  * should be triggered.
@@ -2153,13 +2153,13 @@ void AnycubicTouchscreenClass::GetCommandFromTFT() {
                   PrintdoneAndPowerOFF = false;
                   break;
                 }
-                if(CodeSeen('S')) {                                             
+                if(CodeSeen('S')) {
                   if(PrintdoneAndPowerOFF) {
-                    HARDWARE_SERIAL_PROTOCOLPGM("J35 ");                     
-                    HARDWARE_SERIAL_ENTER();                            
+                    HARDWARE_SERIAL_PROTOCOLPGM("J35 ");
+                    HARDWARE_SERIAL_ENTER();
                   } else {
-                    HARDWARE_SERIAL_PROTOCOLPGM("J34 ");                     
-                    HARDWARE_SERIAL_ENTER();                               
+                    HARDWARE_SERIAL_PROTOCOLPGM("J34 ");
+                    HARDWARE_SERIAL_ENTER();
                   }
                 }
             case 42:
@@ -2275,7 +2275,7 @@ void AnycubicTouchscreenClass::GetCommandFromTFT() {
                   }
                   break;
             #endif
-            
+
             #if ENABLED(KNUTWURST_MEGA_P)
                 case 51:
                   if (CodeSeen('H')) {
@@ -2303,7 +2303,7 @@ void AnycubicTouchscreenClass::GetCommandFromTFT() {
                   }
                   break;
             #endif
-            
+
           default:
           break;
           }
@@ -2361,7 +2361,7 @@ void AnycubicTouchscreenClass::GetCommandFromTFT() {
       delay(10);
       WRITE(POWER_OFF_PIN,HIGH);
       delay(10);
-    } 
+    }
   }
 #endif
 
